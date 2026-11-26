@@ -1,0 +1,313 @@
+
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics | Smart Expense Tracker{% endblock %}
+
+{% block content %}
+
+<!-- Page Heading -->
+<div class="mb-4">
+
+    <p class="eyebrow mb-1">FINANCIAL INSIGHTS</p>
+
+    <h1 class="page-title mb-2">Reports & Analytics</h1>
+
+    <p class="text-secondary mb-0">
+        Understand your income, expenses and spending patterns.
+    </p>
+
+</div>
+
+
+<!-- Export Reports -->
+<div class="report-export-buttons d-flex justify-content-end mt-3"></div>
+
+    <a
+        href="{{ url_for('export_csv') }}"
+        class="btn btn-success"
+    >
+        Download CSV
+    </a>
+
+    <a
+        href="{{ url_for('export_pdf', month=selected_month, year=selected_year) }}"
+        class="btn btn-danger"
+    >
+        Download PDF
+    </a>
+
+</div>
+
+
+<!-- Monthly Report Filter -->
+<div class="panel-card mt-4 report-filter-card">
+
+    <h5 class="mb-3">Select Report Period</h5>
+
+    <form
+        method="GET"
+        action="{{ url_for('reports') }}"
+        class="row g-3 align-items-end"
+    >
+
+        <!-- Month -->
+        <div class="col-md-5">
+
+            <label class="form-label">Month</label>
+
+            <select name="month" class="form-select">
+
+                <option value="1" {% if selected_month == 1 %}selected{% endif %}>January</option>
+                <option value="2" {% if selected_month == 2 %}selected{% endif %}>February</option>
+                <option value="3" {% if selected_month == 3 %}selected{% endif %}>March</option>
+                <option value="4" {% if selected_month == 4 %}selected{% endif %}>April</option>
+                <option value="5" {% if selected_month == 5 %}selected{% endif %}>May</option>
+                <option value="6" {% if selected_month == 6 %}selected{% endif %}>June</option>
+                <option value="7" {% if selected_month == 7 %}selected{% endif %}>July</option>
+                <option value="8" {% if selected_month == 8 %}selected{% endif %}>August</option>
+                <option value="9" {% if selected_month == 9 %}selected{% endif %}>September</option>
+                <option value="10" {% if selected_month == 10 %}selected{% endif %}>October</option>
+                <option value="11" {% if selected_month == 11 %}selected{% endif %}>November</option>
+                <option value="12" {% if selected_month == 12 %}selected{% endif %}>December</option>
+
+            </select>
+
+        </div>
+
+
+        <!-- Year -->
+        <div class="col-md-4">
+
+            <label class="form-label">Year</label>
+
+            <input
+                type="number"
+                name="year"
+                class="form-control"
+                value="{{ selected_year }}"
+                min="2000"
+                max="2100"
+                required
+            >
+
+        </div>
+
+
+        <!-- Generate Report -->
+        <div class="col-md-3">
+
+            <button type="submit" class="btn btn-primary w-100">
+                Generate Report
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<!-- Summary Cards -->
+<div class="row g-3 mt-3">
+
+    <!-- Total Income -->
+    <div class="col-md-4">
+
+        <div class="stat-card report-summary-card report-income">
+
+            <p class="stat-label">Total Income</p>
+
+            <h3 class="stat-value text-success">
+                ₹{{ "%.2f"|format(total_income|float) }}
+            </h3>
+
+            <p class="stat-note">Income during selected month</p>
+
+        </div>
+
+    </div>
+
+
+    <!-- Total Expenses -->
+    <div class="col-md-4">
+
+        <div class="stat-card report-summary-card report-expenses">
+
+            <p class="stat-label">Total Expenses</p>
+
+            <h3 class="stat-value text-danger">
+                ₹{{ "%.2f"|format(total_expenses|float) }}
+            </h3>
+
+            <p class="stat-note">Expenses during selected month</p>
+
+        </div>
+
+    </div>
+
+
+    <!-- Remaining Balance -->
+    <div class="col-md-4">
+
+        <div class="stat-card report-summary-card report-balance">
+
+            <p class="stat-label">Remaining Balance</p>
+
+            <h3 class="stat-value">
+                ₹{{ "%.2f"|format(balance|float) }}
+            </h3>
+
+            <p class="stat-note">Income minus expenses</p>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Charts -->
+<div class="row g-3 mt-2">
+
+    <!-- Category-wise Expenses -->
+    <div class="col-lg-6">
+
+        <div class="panel-card report-chart-card">
+
+            <h5 class="mb-3">Category-wise Expenses</h5>
+
+            <div class="report-chart-area">
+                <canvas id="categoryChart"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Income vs Expenses -->
+    <div class="col-lg-6">
+
+        <div class="panel-card report-chart-card">
+
+            <h5 class="mb-3">Income vs Expenses</h5>
+
+            <div class="report-chart-area">
+                <canvas id="incomeExpenseChart"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+    // Category-wise Expense Chart
+
+    const categoryLabels = {{ category_labels | tojson }};
+    const categoryValues = {{ category_values | tojson }};
+
+    new Chart(document.getElementById("categoryChart"), {
+
+        type: "doughnut",
+
+        data: {
+
+            labels: categoryLabels,
+
+            datasets: [{
+
+                label: "Expenses",
+
+                data: categoryValues,
+
+                backgroundColor: [
+                    "#4e73df",
+                    "#1cc88a",
+                    "#f6c23e",
+                    "#e74a3b",
+                    "#36b9cc",
+                    "#858796",
+                    "#fd7e14"
+                ],
+
+                borderWidth: 2
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false
+
+        }
+
+    });
+
+
+    // Income vs Expenses Chart
+
+    new Chart(document.getElementById("incomeExpenseChart"), {
+
+        type: "bar",
+
+        data: {
+
+            labels: ["Income", "Expenses"],
+
+            datasets: [{
+
+                label: "Amount (₹)",
+
+                data: [
+                    {{ total_income | float }},
+                    {{ total_expenses | float }}
+                ],
+
+                backgroundColor: [
+                    "#1cc88a",
+                    "#e74a3b"
+                ],
+
+                borderRadius: 8
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            scales: {
+
+                y: {
+
+                    beginAtZero: true
+
+                }
+
+            }
+
+        }
+
+    });
+
+</script>
+
+{% endblock %}

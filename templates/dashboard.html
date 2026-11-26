@@ -1,0 +1,384 @@
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Smart Expense Tracker{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Dashboard Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+
+    <div>
+        <p class="eyebrow mb-1">OVERVIEW</p>
+        <h1 class="page-title mb-1">Dashboard</h1>
+        <p class="text-secondary mb-0">
+            Here is your financial snapshot.
+        </p>
+    </div>
+
+    <a href="{{ url_for('add_transaction') }}" class="btn btn-primary">
+        ＋ Add transaction
+    </a>
+
+</div>
+
+
+<!-- Financial Summary Cards -->
+<div class="row g-3 mb-4">
+
+    <!-- Total Income -->
+    <div class="col-sm-6 col-xl-4">
+        <div class="stat-card">
+            <span class="stat-label">Total Income</span>
+
+            <div class="stat-value text-success">
+                ₹{{ "%.2f"|format(total_income) }}
+            </div>
+
+            <span class="stat-note">
+                Money received
+            </span>
+        </div>
+    </div>
+
+    <!-- Total Expenses -->
+    <div class="col-sm-6 col-xl-4">
+        <div class="stat-card">
+            <span class="stat-label">Total Expenses</span>
+
+            <div class="stat-value text-danger">
+                ₹{{ "%.2f"|format(total_expenses) }}
+            </div>
+
+            <span class="stat-note">
+                Money spent
+            </span>
+        </div>
+    </div>
+
+    <!-- Current Balance -->
+    <div class="col-sm-12 col-xl-4">
+        <div class="stat-card">
+            <span class="stat-label">Current Balance</span>
+
+            <div class="stat-value">
+                ₹{{ "%.2f"|format(balance) }}
+            </div>
+
+            <span class="stat-note">
+                Income minus expenses
+            </span>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- Charts Section -->
+<div class="row g-3 mb-4">
+
+    <!-- Expense by Category -->
+    <div class="col-lg-7">
+        <div class="panel-card h-100">
+
+            <h5>Expense by Category</h5>
+
+            <p class="text-secondary small">
+                Understand where your money goes.
+            </p>
+
+            <div class="chart-area">
+                <canvas id="categoryChart"></canvas>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Income vs Expenses -->
+    <div class="col-lg-5">
+        <div class="panel-card h-100">
+
+            <h5>Income vs Expenses</h5>
+
+            <p class="text-secondary small">
+                Compare your cash flow.
+            </p>
+
+            <div class="chart-area">
+                <canvas id="cashflowChart"></canvas>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
+<!-- Monthly Budget Progress -->
+<div class="panel-card mb-4">
+
+    <div class="panel-heading">
+
+        <div>
+            <h5>Monthly Budget Progress</h5>
+
+            <p>
+                Track your spending against your monthly limits.
+            </p>
+        </div>
+
+        <a href="{{ url_for('budgets') }}"
+           class="btn btn-outline-primary btn-sm">
+            Manage Budgets
+        </a>
+
+    </div>
+
+
+    {% for budget in budget_progress %}
+
+    <div class="mb-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+
+            <strong>{{ budget.category }}</strong>
+
+            <span class="text-secondary small">
+                ₹{{ "%.2f"|format(budget.spent) }}
+                / ₹{{ "%.2f"|format(budget.limit) }}
+            </span>
+
+        </div>
+
+
+        <div class="progress" style="height: 10px;">
+
+            <div
+                class="progress-bar
+                {% if budget.percentage >= 100 %}
+                    bg-danger
+                {% elif budget.percentage >= 80 %}
+                    bg-warning
+                {% else %}
+                    bg-success
+                {% endif %}"
+                role="progressbar"
+                style="width: {{ [budget.percentage, 100]|min }}%;"
+                aria-valuenow="{{ budget.percentage }}"
+                aria-valuemin="0"
+                aria-valuemax="100">
+            </div>
+
+        </div>
+
+
+        <div class="d-flex justify-content-between mt-2">
+
+            <span class="text-secondary small">
+                {{ "%.1f"|format(budget.percentage) }}% used
+            </span>
+
+            <span class="text-secondary small">
+                ₹{{ "%.2f"|format(budget.remaining) }} remaining
+            </span>
+
+        </div>
+
+    </div>
+
+    {% else %}
+
+    <p class="text-secondary mb-0">
+        No budgets created for this month yet.
+
+        <a href="{{ url_for('budgets') }}">
+            Create your first budget
+        </a>.
+    </p>
+
+    {% endfor %}
+
+</div>
+
+
+<!-- Recent Transactions -->
+<div class="panel-card">
+
+    <div class="panel-heading">
+
+        <div>
+            <h5>Recent Transactions</h5>
+
+            <p>
+                Your latest financial activity.
+            </p>
+        </div>
+
+        <a href="{{ url_for('transactions') }}"
+           class="btn btn-outline-primary btn-sm">
+            View All
+        </a>
+
+    </div>
+
+
+    <div class="table-responsive">
+
+        <table class="table align-middle">
+
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+
+
+            <tbody>
+
+                {% for item in recent_transactions %}
+
+                <tr>
+
+                    <td>
+                        {{ item.description }}
+                    </td>
+
+                    <td>
+                        {{ item.category }}
+                    </td>
+
+                    <td>
+                        {{ item.date.strftime('%d %b %Y') }}
+                    </td>
+
+                    <td>
+
+                        <span class="badge
+                            {{ 'text-bg-success' if item.type == 'income' else 'text-bg-danger' }}">
+
+                            {{ item.type|title }}
+
+                        </span>
+
+                    </td>
+
+                    <td class="text-end">
+                        ₹{{ "%.2f"|format(item.amount) }}
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="5"
+                        class="text-center text-secondary">
+
+                        No transactions yet.
+
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+<!-- Dashboard Charts -->
+{% block scripts %}
+
+<script>
+
+// Expense Category Chart
+const labels = {{ category_labels|tojson }};
+const values = {{ category_values|tojson }};
+
+new Chart(document.getElementById('categoryChart'), {
+
+    type: 'doughnut',
+
+    data: {
+        labels: labels,
+
+        datasets: [{
+            data: values,
+            borderWidth: 0
+        }]
+    },
+
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+
+});
+
+
+// Income vs Expenses Chart
+new Chart(document.getElementById('cashflowChart'), {
+
+    type: 'bar',
+
+    data: {
+
+        labels: ['Income', 'Expenses'],
+
+        datasets: [{
+
+            data: [
+                {{ total_income }},
+                {{ total_expenses }}
+            ],
+
+            borderRadius: 8
+
+        }]
+
+    },
+
+    options: {
+
+        responsive: true,
+        maintainAspectRatio: false,
+
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+
+    }
+
+});
+
+</script>
+
+{% endblock %}
