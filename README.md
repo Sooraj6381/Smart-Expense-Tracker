@@ -121,3 +121,23 @@ http://127.0.0.1:5000
 Full Stack Python Developer
 
 GitHub: [Sooraj6381](https://github.com/Sooraj6381)
+
+## Application Screenshots
+
+### 1. Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### 2. Reports & Analytics
+![Reports](screenshots/reports.png)
+
+### 3. Transactions
+![Transactions](screenshots/transactions.png)
+
+### 4. Monthly Budgets
+![Budgets](screenshots/budgets.png)
+
+### 5. Registration
+![Registration](screenshots/registration.png)
+
+### 6. Login
+![Login](screenshots/login.png)
